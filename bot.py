@@ -17,9 +17,13 @@ from telegram.ext import (
 )
 from telegram.constants import ParseMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from dotenv import load_dotenv
 from database import Database
 from scraper import HDhub4uScraper
 from cache_manager import CacheManager
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(

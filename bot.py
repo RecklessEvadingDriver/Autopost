@@ -7,6 +7,7 @@ Admin-only bot that automatically posts content to Telegram channels
 import os
 import asyncio
 import logging
+import re
 from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -37,6 +38,11 @@ db = Database()
 scraper = HDhub4uScraper()
 cache = CacheManager()
 scheduler = AsyncIOScheduler()
+
+# Markdown escape characters for Telegram Markdown v1
+MARKDOWN_ESCAPE_CHARS = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+# Create regex pattern for efficient escaping
+MARKDOWN_ESCAPE_PATTERN = re.compile('([' + re.escape(''.join(MARKDOWN_ESCAPE_CHARS)) + '])')
 
 
 def is_admin(user_id: int) -> bool:
@@ -365,6 +371,7 @@ def escape_markdown(text: str) -> str:
     """
     Escape special characters for Telegram Markdown v1
     Characters that need escaping: _ * [ ] ( ) ~ ` > # + - = | { } . !
+    Uses regex substitution for efficient escaping.
     """
     if text is None:
         return None
@@ -372,13 +379,8 @@ def escape_markdown(text: str) -> str:
     if not text:
         return text
     
-    # List of characters that need to be escaped in Markdown v1
-    escape_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
-    
-    for char in escape_chars:
-        text = text.replace(char, '\\' + char)
-    
-    return text
+    # Use regex to escape all special characters in one pass
+    return MARKDOWN_ESCAPE_PATTERN.sub(r'\\\1', text)
 
 
 def format_post_message(item: dict) -> str:

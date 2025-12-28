@@ -7,6 +7,7 @@ Admin-only bot that automatically posts content to Telegram channels
 import os
 import asyncio
 import logging
+import re
 from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -37,6 +38,12 @@ db = Database()
 scraper = HDhub4uScraper()
 cache = CacheManager()
 scheduler = AsyncIOScheduler()
+
+# Markdown escape characters for Telegram Markdown v1
+# Note: Backslash must be escaped first to avoid double-escaping
+MARKDOWN_ESCAPE_CHARS = ['\\', '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+# Create regex pattern for efficient escaping
+MARKDOWN_ESCAPE_PATTERN = re.compile('([' + re.escape(''.join(MARKDOWN_ESCAPE_CHARS)) + '])')
 
 
 def is_admin(user_id: int) -> bool:
@@ -82,8 +89,11 @@ Auto-posting: {status}
     timer = db.get_setting('timer') or '5'
     auto_status = '✅ Active' if db.get_setting('auto_post_enabled') == 'true' else '❌ Inactive'
     
+    # Escape channel name in case it contains special characters
+    channel_escaped = escape_markdown(channel) if channel != 'Not set' else channel
+    
     await update.message.reply_text(
-        welcome_text.format(channel=channel, timer=timer, status=auto_status),
+        welcome_text.format(channel=channel_escaped, timer=timer, status=auto_status),
         parse_mode=ParseMode.MARKDOWN
     )
 
@@ -104,8 +114,11 @@ async def set_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     channel = context.args[0]
     db.set_setting('channel', channel)
     
+    # Escape channel name for Markdown display
+    channel_escaped = escape_markdown(channel)
+    
     await update.message.reply_text(
-        f"✅ Channel set to: `{channel}`\n"
+        f"✅ Channel set to: `{channel_escaped}`\n"
         f"Make sure the bot is an admin in this channel!",
         parse_mode=ParseMode.MARKDOWN
     )
@@ -156,11 +169,14 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total_posts = db.get_total_posts()
     last_post = db.get_last_post_time()
     
+    # Escape channel name in case it contains special characters
+    channel_escaped = escape_markdown(channel) if channel != 'Not set' else channel
+    
     status_text = f"""
 📊 *Bot Status*
 
 *Configuration:*
-• Channel: `{channel}`
+• Channel: `{channel_escaped}`
 • Timer: {timer} minutes
 • Auto-posting: {'✅ Active' if auto_status else '❌ Inactive'}
 
@@ -190,7 +206,10 @@ async def posted_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     history_text = "*Recent Posts:*\n\n"
     for post in posts:
-        history_text += f"• {post['title']}\n  _{post['posted_at']}_\n\n"
+        # Escape special characters in title and date to prevent Markdown errors
+        title_escaped = escape_markdown(post['title'])
+        date_escaped = escape_markdown(post['posted_at'])
+        history_text += f"• {title_escaped}\n  _{date_escaped}_\n\n"
     
     await update.message.reply_text(history_text, parse_mode=ParseMode.MARKDOWN)
 
@@ -349,6 +368,22 @@ async def post_to_channel(application: Application, channel: str, force: bool = 
         raise
 
 
+def escape_markdown(text: str) -> str:
+    """
+    Escape special characters for Telegram Markdown v1
+    Characters that need escaping: _ * [ ] ( ) ~ ` > # + - = | { } . !
+    Uses regex substitution for efficient escaping.
+    """
+    if text is None:
+        return None
+    
+    if not text:
+        return text
+    
+    # Use regex to escape all special characters in one pass
+    return MARKDOWN_ESCAPE_PATTERN.sub(r'\\\1', text)
+
+
 def format_post_message(item: dict) -> str:
     """Format content item into a post message"""
     title = item.get('title', 'Unknown')
@@ -359,18 +394,26 @@ def format_post_message(item: dict) -> str:
     plot = item.get('plot', '')[:200] + '...' if item.get('plot') else ''
     download_count = len(item.get('download_links', []))
     
-    message = f"🎬 *{title}*"
+    # Escape special Markdown characters to prevent parsing errors
+    title_escaped = escape_markdown(title)
+    quality_escaped = escape_markdown(quality)
+    genre_escaped = escape_markdown(genre)
+    year_escaped = escape_markdown(year)
+    rating_escaped = escape_markdown(rating)
+    plot_escaped = escape_markdown(plot)
+    
+    message = f"🎬 *{title_escaped}*"
     
     if quality:
-        message += f"\n\n📊 Quality: {quality}"
+        message += f"\n\n📊 Quality: {quality_escaped}"
     if year:
-        message += f"\n📅 Year: {year}"
+        message += f"\n📅 Year: {year_escaped}"
     if rating:
-        message += f"\n⭐ Rating: {rating}"
+        message += f"\n⭐ Rating: {rating_escaped}"
     if genre:
-        message += f"\n🎭 Genre: {genre}"
+        message += f"\n🎭 Genre: {genre_escaped}"
     if plot:
-        message += f"\n\n📝 {plot}"
+        message += f"\n\n📝 {plot_escaped}"
     
     # Add download links count indicator
     if download_count > 0:

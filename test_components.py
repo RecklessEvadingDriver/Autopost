@@ -135,6 +135,11 @@ def test_markdown_escape():
     # Verify critical special characters are escaped
     assert "\\-" in escaped and "\\[" in escaped and "\\(" in escaped, "Complex title not fully escaped"
     
+    # Test backslash escaping
+    text_with_backslash = r"Text with \ backslash"
+    escaped_backslash = escape_markdown(text_with_backslash)
+    assert "\\\\" in escaped_backslash, "Backslash not escaped"
+    
     print("✅ Markdown escape tests passed!")
 
 def test_message_formatting():

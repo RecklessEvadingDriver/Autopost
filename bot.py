@@ -40,7 +40,8 @@ cache = CacheManager()
 scheduler = AsyncIOScheduler()
 
 # Markdown escape characters for Telegram Markdown v1
-MARKDOWN_ESCAPE_CHARS = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+# Note: Backslash must be escaped first to avoid double-escaping
+MARKDOWN_ESCAPE_CHARS = ['\\', '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
 # Create regex pattern for efficient escaping
 MARKDOWN_ESCAPE_PATTERN = re.compile('([' + re.escape(''.join(MARKDOWN_ESCAPE_CHARS)) + '])')
 

@@ -38,6 +38,7 @@ db = Database()
 scraper = HDhub4uScraper()
 cache = CacheManager()
 scheduler = AsyncIOScheduler()
+PLOT_PREVIEW_LIMIT = 200
 
 
 def is_admin(user_id: int) -> bool:
@@ -351,7 +352,10 @@ async def post_to_channel(application: Application, channel: str, force: bool = 
 
 
 def _escape_md(value) -> str:
-    """Escape text for Markdown parse mode."""
+    """
+    Escape text for Markdown (version 1) parse mode.
+    Converts non-string input to string and returns an empty string for None.
+    """
     if value is None:
         return ''
     return escape_markdown(str(value), version=1)
@@ -364,7 +368,8 @@ def format_post_message(item: dict) -> str:
 
     genre_raw = item.get('genre', [])
     if isinstance(genre_raw, (list, tuple)):
-        genre = _escape_md(', '.join(str(g) for g in genre_raw))
+        escaped_genres = [_escape_md(g) for g in genre_raw]
+        genre = ', '.join(escaped_genres)
     else:
         genre = _escape_md(genre_raw)
 
@@ -374,8 +379,11 @@ def format_post_message(item: dict) -> str:
     plot_raw = item.get('plot', '')
     plot = ''
     if plot_raw:
-        shortened = plot_raw[:200] + '...' if len(plot_raw) > 200 else plot_raw
+        needs_ellipsis = len(plot_raw) > PLOT_PREVIEW_LIMIT
+        shortened = plot_raw[:PLOT_PREVIEW_LIMIT]
         plot = _escape_md(shortened)
+        if needs_ellipsis:
+            plot += '...'
     download_count = len(item.get('download_links', []))
     
     message = f"🎬 *{title}*"

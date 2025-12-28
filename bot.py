@@ -16,6 +16,7 @@ from telegram.ext import (
     CallbackQueryHandler,
 )
 from telegram.constants import ParseMode
+from telegram.helpers import escape_markdown
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database import Database
 from scraper import HDhub4uScraper
@@ -349,14 +350,32 @@ async def post_to_channel(application: Application, channel: str, force: bool = 
         raise
 
 
+def _escape_md(value) -> str:
+    """Escape text for Markdown parse mode."""
+    if value is None:
+        return ''
+    return escape_markdown(str(value), version=1)
+
+
 def format_post_message(item: dict) -> str:
     """Format content item into a post message"""
-    title = item.get('title', 'Unknown')
-    quality = item.get('quality', '')
-    genre = ', '.join(item.get('genre', []))
-    year = item.get('year', '')
-    rating = item.get('rating', '')
-    plot = item.get('plot', '')[:200] + '...' if item.get('plot') else ''
+    title = _escape_md(item.get('title', 'Unknown'))
+    quality = _escape_md(item.get('quality', ''))
+
+    genre_raw = item.get('genre', [])
+    if isinstance(genre_raw, (list, tuple)):
+        genre = _escape_md(', '.join(str(g) for g in genre_raw))
+    else:
+        genre = _escape_md(genre_raw)
+
+    year = _escape_md(item.get('year', ''))
+    rating = _escape_md(item.get('rating', ''))
+
+    plot_raw = item.get('plot', '')
+    plot = ''
+    if plot_raw:
+        shortened = plot_raw[:200] + '...' if len(plot_raw) > 200 else plot_raw
+        plot = _escape_md(shortened)
     download_count = len(item.get('download_links', []))
     
     message = f"🎬 *{title}*"

@@ -1,0 +1,26 @@
+{
+  "name": "HDhub4u Telegram Auto-Post Bot",
+  "description": "Automatically post HDhub4u content to Telegram channels with admin controls",
+  "repository": "https://github.com/RecklessEvadingDriver/Autopost",
+  "keywords": ["telegram", "bot", "automation", "hdhub4u", "auto-post"],
+  "env": {
+    "BOT_TOKEN": {
+      "description": "Your Telegram Bot Token from @BotFather",
+      "required": true
+    },
+    "ADMIN_IDS": {
+      "description": "Comma-separated list of admin Telegram user IDs",
+      "required": true
+    },
+    "HDHUB4U_DOMAIN": {
+      "description": "Custom HDhub4u domain (optional)",
+      "required": false,
+      "value": "https://hdhub4u.rehab"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}

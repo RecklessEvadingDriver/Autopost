@@ -1,0 +1,12 @@
+*.pyc
+__pycache__/
+*.db
+.env
+.DS_Store
+.vscode/
+.idea/
+*.log
+bot_data.db
+venv/
+env/
+.vercel

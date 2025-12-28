@@ -366,6 +366,9 @@ def escape_markdown(text: str) -> str:
     Escape special characters for Telegram Markdown v1
     Characters that need escaping: _ * [ ] ( ) ~ ` > # + - = | { } . !
     """
+    if text is None:
+        return None
+    
     if not text:
         return text
     

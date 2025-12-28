@@ -8,6 +8,7 @@ import sys
 from database import Database
 from cache_manager import CacheManager
 from scraper import HDhub4uScraper
+from bot import format_post_message
 
 def test_database():
     """Test database functionality"""
@@ -70,6 +71,26 @@ def test_cache():
     
     print("✅ Cache tests passed!")
 
+def test_format_message_escaping():
+    """Ensure Markdown entities are escaped in formatted messages"""
+    print("\nTesting Markdown escaping...")
+    sample_item = {
+        'title': 'Movie_Title [HD]',
+        'quality': '1080p_Full',
+        'genre': ['Action_Thriller', 'Sci-Fi'],
+        'year': '2024',
+        'rating': '8.1/10',
+        'plot': 'Plot_with_underscores_and_symbols like [test] (should escape) _and italic_.',
+        'download_links': [{'url': 'https://example.com/download', 'quality': '1080p'}],
+    }
+
+    message = format_post_message(sample_item)
+
+    assert r"Movie\_Title" in message, "Title underscores not escaped"
+    assert r"Plot\_with\_underscores" in message, "Plot underscores not escaped"
+
+    print("✅ Markdown escaping test passed!")
+
 async def test_scraper():
     """Test scraper functionality"""
     print("\nTesting Scraper...")
@@ -107,6 +128,7 @@ def run_tests():
     print("=" * 50)
     
     try:
+        test_format_message_escaping()
         test_database()
         test_cache()
         asyncio.run(test_scraper())

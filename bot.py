@@ -357,6 +357,7 @@ def format_post_message(item: dict) -> str:
     year = item.get('year', '')
     rating = item.get('rating', '')
     plot = item.get('plot', '')[:200] + '...' if item.get('plot') else ''
+    download_count = len(item.get('download_links', []))
     
     message = f"🎬 *{title}*"
     
@@ -371,17 +372,45 @@ def format_post_message(item: dict) -> str:
     if plot:
         message += f"\n\n📝 {plot}"
     
+    # Add download links count indicator
+    if download_count > 0:
+        message += f"\n\n💾 {download_count} Download {'Link' if download_count == 1 else 'Links'} Available"
+        message += f"\n👇 _Click the buttons below to download_"
+    
     return message
 
 
 def create_download_keyboard(item: dict) -> InlineKeyboardMarkup:
-    """Create inline keyboard with download links"""
+    """
+    Create inline keyboard with download links
+    Supports multiple links with quality labels and organized layout
+    """
     buttons = []
     
     links = item.get('download_links', [])
-    for i, link in enumerate(links[:5]):  # Limit to 5 links
+    
+    # Group links by quality for better organization
+    quality_map = {
+        '4K': '🎥 4K UHD',
+        '2160p': '🎥 4K UHD',
+        '1080p': '📺 1080p FHD',
+        '720p': '📱 720p HD',
+        '480p': '📱 480p SD',
+        'Download': '📥 Download'
+    }
+    
+    # Add download link buttons (limit to 8 for better UX)
+    for i, link in enumerate(links[:8]):
         quality = link.get('quality', f'Link {i+1}')
-        buttons.append([InlineKeyboardButton(f"📥 {quality}", url=link['url'])])
+        
+        # Use better emoji based on quality
+        button_text = quality_map.get(quality, f'📥 {quality}')
+        
+        buttons.append([InlineKeyboardButton(button_text, url=link['url'])])
+    
+    # Add "More Info" button with item URL if available
+    if item.get('url'):
+        buttons.append([InlineKeyboardButton('ℹ️ More Info', url=item['url'])])
     
     return InlineKeyboardMarkup(buttons) if buttons else None
 

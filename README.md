@@ -7,13 +7,16 @@ An advanced Telegram bot that automatically posts HDhub4u content to your channe
 - ✅ **Auto-posting**: Automatically posts content every 5 minutes (configurable)
 - ✅ **Admin Only**: Restricted access to authorized admins only
 - ✅ **Duplicate Prevention**: Never posts the same content twice
+- ✅ **Inline Download Buttons**: Beautiful inline buttons for each download link with quality labels
+- ✅ **Multiple Download Options**: Supports up to 8 download links per post (HubDrive, HubCloud, PixelDrain, etc.)
 - ✅ **Download Link Updates**: Monitors and updates download links when changed
 - ✅ **Post History**: Complete record of all posted content
 - ✅ **Smart Caching**: Fast performance with intelligent caching system
 - ✅ **Flexible Timer**: Configure posting interval (1-60+ minutes)
 - ✅ **Multiple Admin Support**: Add multiple admins
 - ✅ **Statistics Dashboard**: Track posts, cache performance, and more
-- ✅ **Quality Detection**: Automatically detects video quality (4K, 1080p, 720p, etc.)
+- ✅ **Quality Detection**: Automatically detects video quality (4K, 1080p, 720p, 480p, etc.)
+- ✅ **Server Detection**: Identifies download server (HubDrive, HubCloud, PixelDrain, Mega, etc.)
 
 ## 📋 Requirements
 
@@ -115,10 +118,29 @@ Autopost/
 1. **Scraping**: Bot scrapes latest content from HDhub4u website
 2. **Caching**: Content is cached to reduce server load and improve speed
 3. **Duplicate Check**: Before posting, checks if content was already posted
-4. **Formatting**: Creates beautiful message with poster, title, quality, etc.
-5. **Posting**: Posts to configured channel with download buttons
-6. **Recording**: Saves post record to prevent duplicates
-7. **Scheduling**: Repeats at configured interval (default: 5 minutes)
+4. **Link Extraction**: Extracts download links from multiple servers (HubDrive, HubCloud, PixelDrain, etc.)
+5. **Quality Detection**: Automatically detects video quality (4K, 1080p, 720p, 480p)
+6. **Formatting**: Creates beautiful message with poster, title, quality, genre, and description
+7. **Inline Buttons**: Generates inline keyboard buttons for each download link
+8. **Posting**: Posts to configured channel with photo and download buttons
+9. **Recording**: Saves post record to prevent duplicates
+10. **Scheduling**: Repeats at configured interval (default: 5 minutes)
+
+### 📥 Download Buttons
+
+Each post includes **inline buttons** for download links:
+
+- **🎥 4K UHD**: Ultra HD 2160p quality
+- **📺 1080p FHD**: Full HD quality  
+- **📱 720p HD**: HD quality
+- **📱 480p SD**: Standard definition
+- **ℹ️ More Info**: Link to full content page
+
+Buttons are:
+- Organized by quality (highest first)
+- Support up to 8 download links per post
+- Automatically labeled with quality and server info
+- One-click access to download pages
 
 ## 💾 Database
 

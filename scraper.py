@@ -143,6 +143,7 @@ class HDhub4uScraper:
     async def get_download_links(self, url: str, cache_manager) -> List[Dict]:
         """
         Get download links for a specific content item
+        Enhanced to extract multiple quality options
         """
         cache_key = f'links_{url}'
         cached = cache_manager.get(cache_key)
@@ -160,22 +161,43 @@ class HDhub4uScraper:
                 soup = BeautifulSoup(html, 'html.parser')
                 
                 links = []
+                seen_urls = set()  # Prevent duplicates
                 
-                # Find download links
-                link_elements = soup.select('h3 a, h4 a, .page-body > div a')
+                # Find download links from multiple sections
+                # Check h3, h4 headers and links in page body
+                link_elements = soup.select('h3 a, h4 a, h5 a, .page-body > div a, .entry-content a')
                 
                 for elem in link_elements:
                     link_url = elem.get('href', '')
                     link_text = elem.get_text(strip=True)
                     
-                    # Filter for valid download links
-                    if any(domain in link_url for domain in ['hdstream4u', 'hubstream', 'hubdrive', 'hubcloud']):
+                    # Skip if already processed
+                    if link_url in seen_urls:
+                        continue
+                    
+                    # Filter for valid download links (from HDhub4u ecosystem)
+                    valid_domains = [
+                        'hdstream4u', 'hubstream', 'hubdrive', 'hubcloud', 
+                        'hubcdn', 'pixeldrain', 'hblinks', 'buzzserver',
+                        'mega.nz', 'mediafire', 'drive.google'
+                    ]
+                    
+                    if any(domain in link_url.lower() for domain in valid_domains):
                         quality = self._extract_quality_from_text(link_text)
+                        
+                        # Add to links list
                         links.append({
                             'url': link_url,
                             'quality': quality,
-                            'text': link_text
+                            'text': link_text,
+                            'server': self._extract_server_name(link_url)
                         })
+                        
+                        seen_urls.add(link_url)
+                
+                # Sort links by quality (4K > 1080p > 720p > 480p)
+                quality_order = {'4K': 0, '2160p': 0, '1080p': 1, '720p': 2, '480p': 3, 'Download': 4}
+                links.sort(key=lambda x: quality_order.get(x['quality'], 5))
                 
                 # Cache for 1 hour
                 cache_manager.set(cache_key, links, ttl=3600)
@@ -187,15 +209,52 @@ class HDhub4uScraper:
             return []
     
     def _extract_quality_from_text(self, text: str) -> str:
-        """Extract quality information from link text"""
-        if '1080' in text:
+        """
+        Extract quality information from link text
+        Enhanced with better pattern matching
+        """
+        text_upper = text.upper()
+        
+        # Check for specific quality patterns (order matters - check specific first)
+        if '2160' in text or '4K' in text_upper or 'UHD' in text_upper:
+            return '4K'
+        elif '1440' in text or 'QHD' in text_upper:
+            return '1440p'
+        elif '1080' in text or 'FHD' in text_upper:
             return '1080p'
         elif '720' in text:
             return '720p'
-        elif '480' in text:
+        elif '480' in text or 'SD' in text_upper:
             return '480p'
-        elif '4K' in text or '2160' in text:
-            return '4K'
+        elif '360' in text:
+            return '360p'
+        elif 'HD' in text_upper and '1080' not in text and '720' not in text:
+            return '720p'  # Generic HD defaults to 720p
+        else:
+            return 'Download'
+    
+    def _extract_server_name(self, url: str) -> str:
+        """Extract server name from URL"""
+        url_lower = url.lower()
+        
+        if 'hubdrive' in url_lower:
+            return 'HubDrive'
+        elif 'hubcloud' in url_lower:
+            return 'HubCloud'
+        elif 'hubstream' in url_lower:
+            return 'HubStream'
+        elif 'hdstream4u' in url_lower:
+            return 'HDStream4u'
+        elif 'pixeldrain' in url_lower:
+            return 'PixelDrain'
+        elif 'hubcdn' in url_lower:
+            return 'HubCDN'
+        elif 'mega.nz' in url_lower:
+            return 'Mega'
+        elif 'mediafire' in url_lower:
+            return 'MediaFire'
+        elif 'drive.google' in url_lower:
+            return 'Google Drive'
         else:
             return 'Download'
     

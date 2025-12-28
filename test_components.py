@@ -8,6 +8,7 @@ import sys
 from database import Database
 from cache_manager import CacheManager
 from scraper import HDhub4uScraper
+from bot import escape_markdown, format_post_message
 
 def test_database():
     """Test database functionality"""
@@ -100,6 +101,85 @@ async def test_scraper():
     finally:
         await scraper.close()
 
+def test_markdown_escape():
+    """Test markdown escape functionality"""
+    print("\nTesting Markdown Escape...")
+    
+    # Test basic escaping
+    assert escape_markdown("Hello World") == "Hello World", "Plain text should not change"
+    
+    # Test underscore (common in titles)
+    assert escape_markdown("Movie_Name") == "Movie\\_Name", "Underscore not escaped"
+    
+    # Test asterisk
+    assert escape_markdown("Movie*Star") == "Movie\\*Star", "Asterisk not escaped"
+    
+    # Test brackets
+    assert escape_markdown("Movie [2024]") == "Movie \\[2024\\]", "Brackets not escaped"
+    
+    # Test parentheses
+    assert escape_markdown("Movie (HD)") == "Movie \\(HD\\)", "Parentheses not escaped"
+    
+    # Test multiple special characters
+    text = "Movie_Name* [2024] (HD-Rip)"
+    escaped = escape_markdown(text)
+    assert "\\_" in escaped and "\\*" in escaped and "\\[" in escaped, "Multiple chars not escaped"
+    
+    # Test empty string
+    assert escape_markdown("") == "", "Empty string failed"
+    assert escape_markdown(None) is None, "None handling failed"
+    
+    # Test complex title with many special characters
+    complex_title = "Spider-Man: No Way Home (2021) [4K-UHD]"
+    escaped = escape_markdown(complex_title)
+    # Verify critical special characters are escaped
+    assert "\\-" in escaped and "\\[" in escaped and "\\(" in escaped, "Complex title not fully escaped"
+    
+    print("✅ Markdown escape tests passed!")
+
+def test_message_formatting():
+    """Test message formatting with escaped markdown"""
+    print("\nTesting Message Formatting...")
+    
+    # Test basic item
+    item = {
+        'title': 'Test Movie',
+        'quality': '1080p',
+        'year': '2024',
+        'rating': '8.5',
+        'genre': ['Action', 'Adventure'],
+        'plot': 'A test plot',
+        'download_links': [{'url': 'http://test.com', 'quality': '1080p'}]
+    }
+    
+    message = format_post_message(item)
+    assert '🎬 \\*Test Movie\\*' in message or '🎬 *Test Movie*' in message, "Title not formatted"
+    assert '1080p' in message, "Quality missing"
+    assert '2024' in message, "Year missing"
+    
+    # Test with special characters in title
+    item_special = {
+        'title': 'Spider-Man: No Way Home [2021]',
+        'quality': '4K',
+        'download_links': []
+    }
+    
+    message_special = format_post_message(item_special)
+    # Should have escaped special characters
+    assert '\\-' in message_special or '-' in message_special, "Dash handling issue"
+    assert '\\[' in message_special or '[' in message_special, "Bracket handling issue"
+    
+    # Test with empty fields
+    item_empty = {
+        'title': 'Simple Movie',
+        'download_links': []
+    }
+    
+    message_empty = format_post_message(item_empty)
+    assert 'Simple Movie' in message_empty, "Basic title missing"
+    
+    print("✅ Message formatting tests passed!")
+
 def run_tests():
     """Run all tests"""
     print("=" * 50)
@@ -109,6 +189,8 @@ def run_tests():
     try:
         test_database()
         test_cache()
+        test_markdown_escape()
+        test_message_formatting()
         asyncio.run(test_scraper())
         
         print("\n" + "=" * 50)
